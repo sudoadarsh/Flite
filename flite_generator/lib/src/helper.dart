@@ -22,6 +22,7 @@ final class _Assertions {
       );
     }
     constructorCheck(element);
+    methodCheck(element);
   }
 
   static void constructorCheck(final ClassElement element) {
@@ -48,6 +49,14 @@ final class _Assertions {
           element: constructor,
         );
       }
+    }
+  }
+
+  static void methodCheck(final ClassElement element) {
+    final List<MethodElement> methods = element.methods;
+    const TypeChecker toJsonChecker = TypeChecker.fromRuntime(ToJson);
+    for (final MethodElement method in methods) {
+      if (!toJsonChecker.hasAnnotationOfExact(element)) continue;
     }
   }
 }
