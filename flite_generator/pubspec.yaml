@@ -1,0 +1,25 @@
+name: flite_generator
+description: "A new Flutter package project."
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: ^3.5.3
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flite:
+    path: ../flite/
+  analyzer: ^6.7.0
+  build: ^2.4.1
+  source_gen: ^1.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  build_runner: ^2.4.12
+
+flutter:

@@ -1,0 +1,14 @@
+targets:
+  $default:
+    builders:
+      generators|annotations:
+        enabled: true
+
+builders:
+  flite_generator:
+    import: "package:flite_generator/flite_generator.dart"
+    builder_factories: ["generateJsonMethods"]
+    build_extensions: { ".dart": [".g.part"] }
+    auto_apply: dependents
+    build_to: cache
+    applies_builders: ["source_gen|combining_builder"] 
