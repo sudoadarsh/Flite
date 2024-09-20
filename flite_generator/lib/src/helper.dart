@@ -21,11 +21,9 @@ final class _Assertions {
         element: element,
       );
     }
-    fromJsonConstructorCheck(element);
-    toJsonMethodCheck(element);
   }
 
-  static void fromJsonConstructorCheck(final ClassElement element) {
+  static bool fromJsonConstructorCheck(final ClassElement element) {
     final List<ConstructorElement> constructors = element.constructors;
     const TypeChecker fromJsonChecker = TypeChecker.fromRuntime(FromJson);
     for (final ConstructorElement constructor in constructors) {
@@ -49,10 +47,12 @@ final class _Assertions {
           element: constructor,
         );
       }
+      return true;
     }
+    return false;
   }
 
-  static void toJsonMethodCheck(final ClassElement element) {
+  static bool toJsonMethodCheck(final ClassElement element) {
     final List<MethodElement> methods = element.methods;
     const TypeChecker toJsonChecker = TypeChecker.fromRuntime(ToJson);
     for (final MethodElement method in methods) {
@@ -69,6 +69,8 @@ final class _Assertions {
           element: method,
         );
       }
+      return true;
     }
+    return false;
   }
 }

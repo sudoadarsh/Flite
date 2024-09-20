@@ -5,8 +5,17 @@ import 'package:source_gen/source_gen.dart';
 part 'helper.dart';
 
 class SchemaBuilder extends GeneratorForAnnotation<Schema> {
+  /// The dart class.
+  String? dartClass;
+
   /// The table name.
   String? table;
+
+  /// Whether fromJson method is available or not.
+  bool fromJson = false;
+
+  /// Whether toJson method is available or not.
+  bool toJson = false;
 
   @override
   String generateForAnnotatedElement(
@@ -15,8 +24,10 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
     BuildStep buildStep,
   ) {
     _Assertions.check(element);
+    fromJson = _Assertions.fromJsonConstructorCheck(element as ClassElement);
+    toJson = _Assertions.toJsonMethodCheck(element);
 
-    final String dartClass = element.name.toString();
+    dartClass = element.name.toString();
     // Set the table name.
     final ConstantReader reader = annotation.read("name");
     table = reader.isString ? reader.stringValue : dartClass;
@@ -25,15 +36,14 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
     final StringBuffer buffer = StringBuffer();
 
     // Create the enum.
-    buffer.write(_createEnum(element as ClassElement));
+    buffer.write(_createEnum(element));
 
     // Provider Start.
     buffer.write("class ${table?.sentence}Provider extends FliteProvider {");
-    buffer.write("\n\n");
-    buffer.write(_createTableGetter());
-
-    buffer.write("\n\n");
-    buffer.write(_createRead());
+    buffer.write("$_createTableGetter\n\n");
+    buffer.write(_createRead);
+    buffer.write(_createInsert);
+    buffer.write(_createUpdate);
     // Provider End.
     buffer.write("}");
     return buffer.toString();
@@ -52,19 +62,52 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
     return buffer.toString();
   }
 
-  String _createTableGetter() {
+  String get _createTableGetter {
     final StringBuffer buffer = StringBuffer();
     buffer.writeln("@override");
     buffer.write("String get table => '$table';");
     return buffer.toString();
   }
 
-  String _createRead() {
+  String get _createRead {
+    final StringBuffer buffer = StringBuffer();
+    if (fromJson) {
+      buffer.write(
+        "Future<List<$dartClass>> read({required ReadParameters parameters}) async {",
+      );
+      buffer.write(
+        "final List<Map<String, dynamic>> data = await flRead(parameters: parameters,);",
+      );
+      buffer.write(
+        "return data.map((final Map<String, dynamic> json) => $dartClass.fromJson(json)).toList();",
+      );
+    } else {
+      buffer.write(
+        "Future<List<Map<String, dynamic>>> read({required ReadParameters parameters,}) async {",
+      );
+      buffer.write("return flRead(parameters: parameters);");
+    }
+
+    buffer.write("}");
+    return buffer.toString();
+  }
+
+  String get _createInsert {
     final StringBuffer buffer = StringBuffer();
     buffer.write(
-      "Future<List<Map<String, dynamic>>> read({required ReadParameters params,}){",
+      "Future<int> insert({required InsertParameters parameters}) async {",
     );
-    buffer.write("return flRead({params: params});");
+    buffer.write("return flInsert(parameters: parameters);");
+    buffer.write("}");
+    return buffer.toString();
+  }
+
+  String get _createUpdate {
+    final StringBuffer buffer = StringBuffer();
+    buffer.write(
+      "Future<int> update({required UpdateParameters parameters}) async {",
+    );
+    buffer.write("return flUpdate(parameters: parameters);");
     buffer.write("}");
     return buffer.toString();
   }

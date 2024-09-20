@@ -10,19 +10,19 @@ abstract class FliteProvider {
 
   /// Read from the table.
   Future<List<Map<String, dynamic>>> flRead({
-    required ReadParameters params,
+    required ReadParameters parameters,
   }) async {
     return Flite.database.query(
       table,
-      columns: params.columns,
-      distinct: params.distinct,
-      where: params.where,
-      whereArgs: params.whereArgs,
-      groupBy: params.groupBy,
-      having: params.having,
-      orderBy: params.orderBy,
-      limit: params.limit,
-      offset: params.offset,
+      columns: parameters.columns,
+      distinct: parameters.distinct,
+      where: parameters.where,
+      whereArgs: parameters.whereArgs,
+      groupBy: parameters.groupBy,
+      having: parameters.having,
+      orderBy: parameters.orderBy,
+      limit: parameters.limit,
+      offset: parameters.offset,
     );
   }
 
