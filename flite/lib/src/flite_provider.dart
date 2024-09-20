@@ -9,7 +9,7 @@ abstract class FliteProvider {
   String get table;
 
   /// Read from the table.
-  Future<List<Map<String, dynamic>>> read({
+  Future<List<Map<String, dynamic>>> flRead({
     required ReadParameters params,
   }) async {
     return Flite.database.query(
@@ -27,7 +27,7 @@ abstract class FliteProvider {
   }
 
   /// Insert into table and returns the id of the inserted row.
-  Future<int> insert({required InsertParameters parameters}) async {
+  Future<int> flInsert({required InsertParameters parameters}) async {
     return Flite.database.insert(
       table,
       parameters.json,
@@ -37,7 +37,7 @@ abstract class FliteProvider {
   }
 
   /// Updates the table and returns the number of changes made.
-  Future<int> update({required UpdateParameters parameters}) {
+  Future<int> flUpdate({required UpdateParameters parameters}) {
     return Flite.database.update(
       table,
       parameters.json,
@@ -48,7 +48,7 @@ abstract class FliteProvider {
   }
 
   /// Deletes row from the table and returns the number of rows affected.
-  Future<int> clear({required DeleteParameters parameters}) async {
+  Future<int> flClear({required DeleteParameters parameters}) async {
     return Flite.database.delete(
       table,
       where: parameters.where,

@@ -1,1 +1,3 @@
-class ToJson {}
+class ToJson {
+  const ToJson();
+}

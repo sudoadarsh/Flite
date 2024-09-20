@@ -28,8 +28,12 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
     buffer.write(_createEnum(element as ClassElement));
 
     // Provider Start.
-    buffer.write("class ${table?.sentence}Provider {");
+    buffer.write("class ${table?.sentence}Provider extends FliteProvider {");
+    buffer.write("\n\n");
     buffer.write(_createTableGetter());
+
+    buffer.write("\n\n");
+    buffer.write(_createRead());
     // Provider End.
     buffer.write("}");
     return buffer.toString();
@@ -52,6 +56,16 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
     final StringBuffer buffer = StringBuffer();
     buffer.writeln("@override");
     buffer.write("String get table => '$table';");
+    return buffer.toString();
+  }
+
+  String _createRead() {
+    final StringBuffer buffer = StringBuffer();
+    buffer.write(
+      "Future<List<Map<String, dynamic>>> read({required ReadParameters params,}){",
+    );
+    buffer.write("return flRead({params: params});");
+    buffer.write("}");
     return buffer.toString();
   }
 }
