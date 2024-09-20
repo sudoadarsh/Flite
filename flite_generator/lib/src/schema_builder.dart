@@ -44,6 +44,7 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
     buffer.write(_createRead);
     buffer.write(_createInsert);
     buffer.write(_createUpdate);
+    buffer.write(_createDelete);
     // Provider End.
     buffer.write("}");
     return buffer.toString();
@@ -108,6 +109,16 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
       "Future<int> update({required UpdateParameters parameters}) async {",
     );
     buffer.write("return flUpdate(parameters: parameters);");
+    buffer.write("}");
+    return buffer.toString();
+  }
+
+  String get _createDelete {
+    final StringBuffer buffer = StringBuffer();
+    buffer.write(
+      "Future<int> delete({required DeleteParameters parameters}) async {",
+    );
+    buffer.write("return flDelete(parameters: parameters);");
     buffer.write("}");
     return buffer.toString();
   }

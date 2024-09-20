@@ -48,7 +48,7 @@ abstract class FliteProvider {
   }
 
   /// Deletes row from the table and returns the number of rows affected.
-  Future<int> flClear({required DeleteParameters parameters}) async {
+  Future<int> flDelete({required DeleteParameters parameters}) async {
     return Flite.database.delete(
       table,
       where: parameters.where,
