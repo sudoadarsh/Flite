@@ -6,4 +6,19 @@ export 'src/annotations/schema.dart';
 export 'src/annotations/from_json.dart';
 export 'src/annotations/to_json.dart';
 
-export 'src/flite.dart' show Flite;
+import 'package:sqflite/sqlite_api.dart';
+
+typedef FliteDatabase = Database;
+
+abstract final class Flite {
+  /// The database.
+  static FliteDatabase get database {
+    assert(
+      _database != null,
+      "Configure Flite before using generated Providers",
+    );
+    return _database!;
+  }
+
+  static FliteDatabase? _database;
+}

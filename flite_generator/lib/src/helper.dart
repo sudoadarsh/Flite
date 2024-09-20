@@ -21,11 +21,11 @@ final class _Assertions {
         element: element,
       );
     }
-    constructorCheck(element);
-    methodCheck(element);
+    fromJsonConstructorCheck(element);
+    toJsonMethodCheck(element);
   }
 
-  static void constructorCheck(final ClassElement element) {
+  static void fromJsonConstructorCheck(final ClassElement element) {
     final List<ConstructorElement> constructors = element.constructors;
     const TypeChecker fromJsonChecker = TypeChecker.fromRuntime(FromJson);
     for (final ConstructorElement constructor in constructors) {
@@ -52,11 +52,23 @@ final class _Assertions {
     }
   }
 
-  static void methodCheck(final ClassElement element) {
+  static void toJsonMethodCheck(final ClassElement element) {
     final List<MethodElement> methods = element.methods;
     const TypeChecker toJsonChecker = TypeChecker.fromRuntime(ToJson);
     for (final MethodElement method in methods) {
-      if (!toJsonChecker.hasAnnotationOfExact(element)) continue;
+      if (!toJsonChecker.hasAnnotationOfExact(method)) continue;
+      if (method.name != "toJson") {
+        throw InvalidGenerationSource(
+          "The method annotated with toJson must be named 'toJson'",
+          element: method,
+        );
+      }
+      if (method.returnType.toString() != "Map<String, dynamic>") {
+        throw InvalidGenerationSource(
+          "The method annotated with toJson must return Map<String, dynamic>",
+          element: method,
+        );
+      }
     }
   }
 }
