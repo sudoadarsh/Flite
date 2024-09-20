@@ -1,3 +1,1 @@
-class FromJson {
-  const FromJson();
-}
+class FromJson {}
