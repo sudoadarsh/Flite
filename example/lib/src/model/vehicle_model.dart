@@ -3,21 +3,46 @@ part 'vehicle_model.g.dart';
 
 @Schema()
 class VehicleModel {
+  @primaryKey
   final int id;
   final String name;
   final String? description;
 
-  const VehicleModel(
-      {required this.id, required this.name, required this.description});
+  @ForeignKey(
+    "Manufacturer",
+    "id",
+    CascadeOperation.cascade,
+    CascadeOperation.restrict,
+  )
+  final int? manufacturerId;
 
-  @FromJson()
+  @ForeignKey("Country", "id")
+  final int? countryId;
+
+  const VehicleModel({
+    required this.id,
+    required this.name,
+    this.description,
+    this.manufacturerId,
+    this.countryId,
+  });
+
+  @fromJsonConstructor
   VehicleModel.fromJson(final Map<String, dynamic> json)
       : id = json["id"],
         name = json["name"],
-        description = json["description"];
+        description = json["description"],
+        manufacturerId = json["manufacturerId"],
+        countryId = json["countryId"];
 
-  @ToJson()
+  @toJsonFunction
   Map<String, dynamic> toJson() {
-    return {'id': id, 'name': name, 'description': description};
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'manufacturerId': manufacturerId,
+      'countryId': countryId,
+    };
   }
 }

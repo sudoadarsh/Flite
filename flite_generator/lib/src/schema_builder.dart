@@ -75,11 +75,15 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
     const TypeChecker primaryKeyChecker = TypeChecker.fromRuntime(PrimaryKey);
     // The ignore key checker.
     const TypeChecker ignoreKey = TypeChecker.fromRuntime(IgnoreKey);
+    // The foreign key checker.
+    const TypeChecker foreignKeyChecker = TypeChecker.fromRuntime(ForeignKey);
 
     // The string buffer.
     final StringBuffer buffer = StringBuffer();
     buffer.write("String get schema {");
     buffer.write("return '''CREATE TABLE IF NOT EXISTS $table(");
+
+    final Map<String, ForeignKey> foreignKeys = <String, ForeignKey>{};
 
     final List<FieldElement> fields = element.fields;
     for (int index = 0; index < fields.length; index++) {
@@ -106,10 +110,38 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
           );
         }
         buffer.write(" PRIMARY KEY${autoIncrement ? " AUTOINCREMENT" : ""}");
+      } else if (foreignKeyChecker.hasAnnotationOfExact(field)) {
+        final DartObject? obj = foreignKeyChecker.firstAnnotationOfExact(field);
+        final String? table = obj?.getField("table")?.toStringValue();
+        final String? column = obj?.getField("column")?.toStringValue();
+        final DartObject? onDelete = obj?.getField("onDelete");
+        final DartObject? onUpdate = obj?.getField("onUpdate");
+        print("The dart object: $onUpdate");
+        foreignKeys[field.name] = ForeignKey(
+          table!,
+          column,
+          CascadeOperation.values.elementAt(_enumIndex(onDelete)),
+          CascadeOperation.values.elementAt(_enumIndex(onUpdate)),
+        );
       }
       if (isRequired) buffer.write(" NOT NULL");
       if (index != fields.length - 1) buffer.write(",");
     }
+
+    if (foreignKeys.isNotEmpty) {
+      buffer.writeln(",");
+      for (int index = 0; index < foreignKeys.length; index++) {
+        if (index != 0) buffer.write(",\n");
+        final MapEntry<String, ForeignKey> entry;
+        entry = foreignKeys.entries.elementAt(index);
+        buffer.write("${tabs}FOREIGN KEY (${entry.key})");
+        buffer.write(" REFERENCES ${entry.value.table}(${entry.value.column})");
+        buffer.write(
+          " ON DELETE ${entry.value.onDelete.value} ON UPDATE ${entry.value.onUpdate.value}",
+        );
+      }
+    }
+
     buffer.write("\n$tabs''';}");
     return buffer.toString();
   }
@@ -205,5 +237,10 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
         throw StateError("The dart type $dartType is unsupported.");
     }
     return sqliteType;
+  }
+
+  /// Get the enum index from DartObject.
+  int _enumIndex(final DartObject? object) {
+    return object?.getField("index")?.toIntValue() ?? 0;
   }
 }
