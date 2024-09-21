@@ -1,8 +1,5 @@
 import 'package:flite/flite.dart';
-import 'package:flite/src/parameters/insert_parameters.dart';
-import 'package:flite/src/parameters/update_parameters.dart';
-import 'parameters/delete_parameters.dart';
-import 'parameters/read_parameters.dart';
+import 'package:sqflite/sqlite_api.dart';
 
 abstract class FliteProvider {
   /// The name of the table.
@@ -27,32 +24,37 @@ abstract class FliteProvider {
   }
 
   /// Insert into table and returns the id of the inserted row.
-  Future<int> flInsert({required InsertParameters parameters}) async {
+  Future<int> flInsert({
+    required Map<String, dynamic> json,
+    ConflictAlgorithm? conflictAlgorithm,
+    String? nullColumnHack,
+  }) async {
     return Flite.database.insert(
       table,
-      parameters.json,
-      conflictAlgorithm: parameters.conflictAlgorithm,
-      nullColumnHack: parameters.nullColumnHack,
+      json,
+      conflictAlgorithm: conflictAlgorithm,
+      nullColumnHack: nullColumnHack,
     );
   }
 
   /// Updates the table and returns the number of changes made.
-  Future<int> flUpdate({required UpdateParameters parameters}) {
+  Future<int> flUpdate({
+    required Map<String, dynamic> json,
+    String? where,
+    List<Object?>? whereArgs,
+    ConflictAlgorithm? conflictAlgorithm,
+  }) {
     return Flite.database.update(
       table,
-      parameters.json,
-      where: parameters.where,
-      whereArgs: parameters.whereArgs,
-      conflictAlgorithm: parameters.conflictAlgorithm,
+      json,
+      where: where,
+      whereArgs: whereArgs,
+      conflictAlgorithm: conflictAlgorithm,
     );
   }
 
   /// Deletes row from the table and returns the number of rows affected.
-  Future<int> flDelete({required DeleteParameters parameters}) async {
-    return Flite.database.delete(
-      table,
-      where: parameters.where,
-      whereArgs: parameters.whereArgs,
-    );
+  Future<int> flDelete({String? where, List<Object?>? whereArgs}) async {
+    return Flite.database.delete(table, where: where, whereArgs: whereArgs);
   }
 }

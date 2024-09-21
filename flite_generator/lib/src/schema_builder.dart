@@ -1,4 +1,7 @@
+import 'package:analyzer/dart/constant/value.dart';
 import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/dart/element/nullability_suffix.dart';
+import 'package:analyzer/dart/element/type.dart';
 import 'package:build/build.dart';
 import 'package:flite/flite.dart';
 import 'package:source_gen/source_gen.dart';
@@ -16,6 +19,9 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
 
   /// Whether toJson method is available or not.
   bool toJson = false;
+
+  /// The tabs.
+  String tabs = "\t\t";
 
   @override
   String generateForAnnotatedElement(
@@ -41,6 +47,7 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
     // Provider Start.
     buffer.write("class ${table?.sentence}Provider extends FliteProvider {");
     buffer.write("$_createTableGetter\n\n");
+    buffer.write(_createSchema(element));
     buffer.write(_createRead);
     buffer.write(_createInsert);
     buffer.write(_createUpdate);
@@ -60,6 +67,50 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
       );
     }
     buffer.write("}");
+    return buffer.toString();
+  }
+
+  String _createSchema(final ClassElement element) {
+    // The primary key checker.
+    const TypeChecker primaryKeyChecker = TypeChecker.fromRuntime(PrimaryKey);
+    // The ignore key checker.
+    const TypeChecker ignoreKey = TypeChecker.fromRuntime(IgnoreKey);
+
+    // The string buffer.
+    final StringBuffer buffer = StringBuffer();
+    buffer.write("String get schema {");
+    buffer.write("return '''CREATE TABLE IF NOT EXISTS $table(");
+
+    final List<FieldElement> fields = element.fields;
+    for (int index = 0; index < fields.length; index++) {
+      final FieldElement field = fields.elementAt(index);
+      // Don't consider the field if annotated with IgnoreKey.
+      if (ignoreKey.hasAnnotationOfExact(field)) continue;
+
+      buffer.write("\n$tabs${field.name} ");
+      // The sqlite type.
+      final String sqliteType = _sqliteType(field.type);
+      buffer.write(sqliteType);
+      // Check if the field is required or not.
+      final bool isRequired;
+      isRequired = field.type.nullabilitySuffix != NullabilitySuffix.question;
+
+      // Check if the field is a primary key or not.
+      if (primaryKeyChecker.hasAnnotationOfExact(field)) {
+        final DartObject? obj = primaryKeyChecker.firstAnnotationOfExact(field);
+        final bool autoIncrement;
+        autoIncrement = obj?.getField("autoIncrement")?.toBoolValue() ?? true;
+        if (sqliteType != "INTEGER" && autoIncrement) {
+          throw StateError(
+            "Auto-increment is only applicable to primary keys of type INTEGER",
+          );
+        }
+        buffer.write(" PRIMARY KEY${autoIncrement ? " AUTOINCREMENT" : ""}");
+      }
+      if (isRequired) buffer.write(" NOT NULL");
+      if (index != fields.length - 1) buffer.write(",");
+    }
+    buffer.write("\n$tabs''';}");
     return buffer.toString();
   }
 
@@ -95,20 +146,36 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
 
   String get _createInsert {
     final StringBuffer buffer = StringBuffer();
+    if (toJson) {
+      buffer.write(
+        "Future<int> insert({required $dartClass data, ConflictAlgorithm? conflictAlgorithm, String? nullColumnHack,}) async {",
+      );
+    } else {
+      buffer.write(
+        "Future<int> insert({required Map<String, dynamic> json, ConflictAlgorithm? conflictAlgorithm, String? nullColumnHack,}) async {",
+      );
+    }
     buffer.write(
-      "Future<int> insert({required InsertParameters parameters}) async {",
+      "return flInsert(json: ${toJson ? 'data.toJson()' : 'json'}, conflictAlgorithm: conflictAlgorithm, nullColumnHack: nullColumnHack,);",
     );
-    buffer.write("return flInsert(parameters: parameters);");
     buffer.write("}");
     return buffer.toString();
   }
 
   String get _createUpdate {
     final StringBuffer buffer = StringBuffer();
+    if (toJson) {
+      buffer.write(
+        "Future<int> update({required $dartClass data, String? where, List<Object?>? whereArgs, ConflictAlgorithm? conflictAlgorithm,}) async {",
+      );
+    } else {
+      buffer.write(
+        "Future<int> update({required Map<String, dynamic> json, String? where, List<Object?>? whereArgs, ConflictAlgorithm? conflictAlgorithm,}) async {",
+      );
+    }
     buffer.write(
-      "Future<int> update({required UpdateParameters parameters}) async {",
+      "return flUpdate(json: ${toJson ? 'data.toJson()' : 'json'}, where: where, whereArgs: whereArgs, conflictAlgorithm: conflictAlgorithm,);",
     );
-    buffer.write("return flUpdate(parameters: parameters);");
     buffer.write("}");
     return buffer.toString();
   }
@@ -116,10 +183,27 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
   String get _createDelete {
     final StringBuffer buffer = StringBuffer();
     buffer.write(
-      "Future<int> delete({required DeleteParameters parameters}) async {",
+      "Future<int> delete({String? where, List<Object?>? whereArgs}) async {",
     );
-    buffer.write("return flDelete(parameters: parameters);");
+    buffer.write("return flDelete(where: where, whereArgs: whereArgs);");
     buffer.write("}");
     return buffer.toString();
+  }
+
+  /// Get the sqlite type from the dart type.
+  String _sqliteType(final DartType dartType) {
+    final String baseType = dartType.getDisplayString();
+    final String sqliteType;
+    switch (baseType) {
+      case "int" || "int?":
+        sqliteType = "INTEGER";
+      case "String" || "String?":
+        sqliteType = "TEXT";
+      case "Double" || "Double?":
+        sqliteType = "REAL";
+      default:
+        throw StateError("The dart type $dartType is unsupported.");
+    }
+    return sqliteType;
   }
 }

@@ -1,4 +1,4 @@
-export 'ignore_field.dart';
+export 'ignore_key.dart';
 export 'primary_key.dart';
 export 'schema.dart';
 export 'from_json.dart';
