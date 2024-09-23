@@ -52,6 +52,7 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
     buffer.write(_createInsert);
     buffer.write(_createUpdate);
     buffer.write(_createDelete);
+    buffer.write(_createTransaction);
     // Provider End.
     buffer.write("}");
     return buffer.toString();
@@ -116,7 +117,6 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
         final String? column = obj?.getField("column")?.toStringValue();
         final DartObject? onDelete = obj?.getField("onDelete");
         final DartObject? onUpdate = obj?.getField("onUpdate");
-        print("The dart object: $onUpdate");
         foreignKeys[field.name] = ForeignKey(
           table!,
           column,
@@ -219,6 +219,47 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
     );
     buffer.write("return flDelete(where: where, whereArgs: whereArgs);");
     buffer.write("}");
+    return buffer.toString();
+  }
+
+  String get _createTransaction {
+    final StringBuffer buffer = StringBuffer();
+    // The generic type.
+    final String? genericType = toJson ? dartClass : "Map<String, dynamic>";
+    buffer.write(
+      "Future<void> transaction({required List<TransactionParameters<$genericType>> parameters,}) async {",
+    );
+    buffer.write("return await database.transaction((txn) async {");
+    buffer.write(
+      "for (final TransactionParameters<$genericType> parameter in parameters) {",
+    );
+    buffer.write('''
+      switch (parameter.type) {
+          case TransactionType.insert:
+            await txn.insert(
+              table,
+              ${toJson ? "parameter.data?.toJson()" : "parameter.data"}  ?? const {},
+              conflictAlgorithm: parameter.conflictAlgorithm,
+              nullColumnHack: parameter.nullColumnHack,
+            );
+          case TransactionType.update:
+            await txn.update(
+              table,
+              parameter.data as Map<String, dynamic>,
+              conflictAlgorithm: parameter.conflictAlgorithm,
+              where: parameter.where,
+              whereArgs: parameter.whereArgs,
+            );
+          case TransactionType.delete:
+            await txn.delete(
+              table,
+              where: parameter.where,
+              whereArgs: parameter.whereArgs,
+            );
+        }
+    ''');
+    buffer.write("}");
+    buffer.write("});}");
     return buffer.toString();
   }
 
