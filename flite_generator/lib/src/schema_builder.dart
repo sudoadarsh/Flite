@@ -245,7 +245,7 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
           case TransactionType.update:
             await txn.update(
               table,
-              parameter.data as Map<String, dynamic>,
+              ${toJson ? "parameter.data?.toJson()" : "parameter.data"}  ?? const {},
               conflictAlgorithm: parameter.conflictAlgorithm,
               where: parameter.where,
               whereArgs: parameter.whereArgs,
