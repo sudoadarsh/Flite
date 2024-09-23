@@ -3,5 +3,3 @@ class PrimaryKey {
   final bool autoIncrement;
   const PrimaryKey({this.required = true, this.autoIncrement = true});
 }
-
-const PrimaryKey primaryKey = PrimaryKey();

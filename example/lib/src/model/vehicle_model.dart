@@ -3,7 +3,7 @@ part 'vehicle_model.g.dart';
 
 @Schema()
 class VehicleModel {
-  @primaryKey
+  @PrimaryKey()
   final int id;
   final String name;
   final String? description;
@@ -27,7 +27,7 @@ class VehicleModel {
     this.countryId,
   });
 
-  @fromJsonConstructor
+  @FromJson()
   VehicleModel.fromJson(final Map<String, dynamic> json)
       : id = json["id"],
         name = json["name"],
@@ -35,7 +35,7 @@ class VehicleModel {
         manufacturerId = json["manufacturerId"],
         countryId = json["countryId"];
 
-  @toJsonFunction
+  @ToJson()
   Map<String, dynamic> toJson() {
     return {
       'id': id,
