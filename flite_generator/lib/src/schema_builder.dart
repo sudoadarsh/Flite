@@ -46,8 +46,11 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
 
     // Provider Start.
     buffer.write("class ${table?.sentence}Provider extends FliteProvider {");
-    buffer.write("$_createTableGetter\n\n");
+    buffer.writeln("FliteDatabase? _database;\n");
+    buffer.write(_createDatabaseGetter);
+    buffer.writeln("$_createTableGetter\n");
     buffer.write(_createSchema(element));
+    buffer.write(_createInit);
     buffer.write(_createRead);
     buffer.write(_createInsert);
     buffer.write(_createUpdate);
@@ -71,6 +74,17 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
     return buffer.toString();
   }
 
+  String get _createDatabaseGetter {
+    final StringBuffer buffer = StringBuffer();
+    buffer.writeln("@override");
+    buffer.write("FliteDatabase get database {");
+    buffer.write(
+      "assert(_database != null, 'Initialize the ${table?.sentence}Provider.');",
+    );
+    buffer.write("return _database!; }");
+    return buffer.toString();
+  }
+
   String _createSchema(final ClassElement element) {
     // The primary key checker.
     const TypeChecker primaryKeyChecker = TypeChecker.fromRuntime(PrimaryKey);
@@ -81,6 +95,7 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
 
     // The string buffer.
     final StringBuffer buffer = StringBuffer();
+    buffer.writeln("@override");
     buffer.write("String get schema {");
     buffer.write("return '''CREATE TABLE IF NOT EXISTS $table(");
 
@@ -143,6 +158,15 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
     }
 
     buffer.write("\n$tabs''';}");
+    return buffer.toString();
+  }
+
+  String get _createInit {
+    final StringBuffer buffer = StringBuffer();
+    buffer.write("Future<void> init(final FliteDatabase database) async {");
+    buffer.write("await flInit(database);");
+    buffer.write("_database = database;");
+    buffer.write("return; }");
     return buffer.toString();
   }
 

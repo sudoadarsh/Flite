@@ -27,7 +27,7 @@ class VehicleModel {
     this.countryId,
   });
 
-  @FromJson()
+  // @FromJson()
   VehicleModel.fromJson(final Map<String, dynamic> json)
       : id = json["id"],
         name = json["name"],
@@ -35,7 +35,7 @@ class VehicleModel {
         manufacturerId = json["manufacturerId"],
         countryId = json["countryId"];
 
-  @ToJson()
+  // @ToJson()
   Map<String, dynamic> toJson() {
     return {
       'id': id,

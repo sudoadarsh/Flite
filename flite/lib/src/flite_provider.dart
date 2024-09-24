@@ -1,12 +1,21 @@
-import 'package:flite/flite.dart';
-import 'package:sqflite/sqlite_api.dart';
+import 'package:flite/flite.dart'
+    show ConflictAlgorithm, FliteDatabase, ReadParameters;
 
 abstract class FliteProvider {
+  /// The database.
+  FliteDatabase get database;
+
   /// The name of the table.
   String get table;
 
-  /// The database.
-  FliteDatabase get database => Flite.database;
+  /// The schema for the table.
+  String get schema;
+
+  /// Initialize the Provider.
+  Future<void> flInit(final FliteDatabase database) async {
+    await database.rawQuery(schema);
+    return;
+  }
 
   /// Read from the table.
   Future<List<Map<String, dynamic>>> flRead({
@@ -59,37 +68,5 @@ abstract class FliteProvider {
   /// Deletes row from the table and returns the number of rows affected.
   Future<int> flDelete({String? where, List<Object?>? whereArgs}) async {
     return database.delete(table, where: where, whereArgs: whereArgs);
-  }
-
-  Future<void> tx<T extends Object>({
-    required List<TransactionParameters<T>> parameters,
-  }) async {
-    return await database.transaction((final Transaction txn) async {
-      for (final TransactionParameters parameter in parameters) {
-        switch (parameter.type) {
-          case TransactionType.insert:
-            await txn.insert(
-              table,
-              parameter.data as Map<String, dynamic>,
-              conflictAlgorithm: parameter.conflictAlgorithm,
-              nullColumnHack: parameter.nullColumnHack,
-            );
-          case TransactionType.update:
-            await txn.update(
-              table,
-              parameter.data as Map<String, dynamic>,
-              conflictAlgorithm: parameter.conflictAlgorithm,
-              where: parameter.where,
-              whereArgs: parameter.whereArgs,
-            );
-          case TransactionType.delete:
-            await txn.delete(
-              table,
-              where: parameter.where,
-              whereArgs: parameter.whereArgs,
-            );
-        }
-      }
-    });
   }
 }

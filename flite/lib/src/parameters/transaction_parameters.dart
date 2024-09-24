@@ -1,4 +1,4 @@
-import 'package:flite/flite.dart';
+import 'package:flite/flite.dart' show ConflictAlgorithm;
 
 enum TransactionType { insert, update, delete }
 
