@@ -1,6 +1,6 @@
-export 'ignore_key.dart';
-export 'primary_key.dart';
+export 'ignore.dart';
+export 'primary.dart';
 export 'schema.dart';
-export 'from_json.dart';
-export 'to_json.dart';
-export 'foreign_key.dart';
+export 'deserialize.dart';
+export 'serialize.dart';
+export 'foreign.dart';

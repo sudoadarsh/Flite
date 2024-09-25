@@ -20,7 +20,7 @@ enum CascadeOperation {
   String toString() => name;
 }
 
-class ForeignKey {
+class Foreign {
   /// The table of be referenced.
   final String table;
 
@@ -33,7 +33,7 @@ class ForeignKey {
   /// The update cascade operation.
   final CascadeOperation onUpdate;
 
-  const ForeignKey(
+  const Foreign(
     this.table,
     this.column, [
     this.onDelete = CascadeOperation.cascade,
