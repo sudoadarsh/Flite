@@ -1,12 +1,5 @@
 part of 'schema_builder.dart';
 
-extension StringExt on String {
-  /// Sentence capitalization.
-  String get sentence {
-    return this[0].toUpperCase() + substring(1);
-  }
-}
-
 final class _Assertions {
   static void check(final Element element) {
     if (element is! ClassElement) {

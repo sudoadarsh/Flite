@@ -2,6 +2,7 @@ import 'package:flite/src/parameters/insert_parameters.dart';
 import 'package:flite/src/parameters/update_parameters.dart';
 import 'package:sqflite/sqlite_api.dart' show Database;
 
+/// Mix your Schema Dart class with this.
 mixin FliteProvider on Object {
   /// The database.
   static Database? _db;
