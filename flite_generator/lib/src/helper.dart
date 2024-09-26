@@ -21,5 +21,16 @@ final class _Assertions {
         element: element,
       );
     }
+    if (element.mixins.isEmpty) {
+      throw InvalidGenerationSource(
+        "The annotated class must be mixed with `FliteProvider` mixin.",
+      );
+    } else if (!element.mixins.any((final InterfaceType interface) {
+      return interface.element.name == "FliteProvider";
+    })) {
+      throw InvalidGenerationSource(
+        "The annotated class must be mixed with `FliteProvider` mixin.",
+      );
+    }
   }
 }
