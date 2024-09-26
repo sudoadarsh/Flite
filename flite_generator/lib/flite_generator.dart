@@ -5,5 +5,5 @@ import 'package:flite_generator/src/schema_builder.dart';
 import 'package:source_gen/source_gen.dart';
 
 Builder generateJsonMethods(BuilderOptions options) {
-  return SharedPartBuilder([SchemaBuilder()], 'flite');
+  return SharedPartBuilder([SchemaBuilder()], 'flite', allowSyntaxErrors: true);
 }

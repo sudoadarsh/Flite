@@ -3,20 +3,20 @@ part 'vehicle_model.g.dart';
 
 @Schema()
 class VehicleModel {
-  @PrimaryKey()
+  @primary
   final int id;
   final String name;
   final String? description;
 
-  @ForeignKey(
+  @Foreign(
     "Manufacturer",
     "id",
-    CascadeOperation.cascade,
-    CascadeOperation.restrict,
+    Operation.cascade,
+    Operation.restrict,
   )
   final int? manufacturerId;
 
-  @ForeignKey("Country", "id")
+  @Foreign("Country", "id")
   final int? countryId;
 
   const VehicleModel({

@@ -1,35 +1,30 @@
+/// Parameters for reading data from SQLite.
 class ReadParameters {
-  /// When set to true ensures each row is unique.
+  /// Whether to return only distinct rows.
   final bool? distinct;
 
-  /// The columns to return
+  /// The columns to return. If null, returns all columns.
   final List<String>? columns;
 
-  /// Filters which rows to return. Passing null will return all rows
-  /// for the given URL. '?'s are replaced with the items in the
-  /// [whereArgs] field.
+  /// The WHERE clause to filter rows.
   final String? where;
+
+  /// Arguments for the WHERE clause.
   final List<Object?>? whereArgs;
 
-  // Declares how to group rows. Passing null
-  /// will cause the rows to not be grouped.
+  /// The GROUP BY clause to group rows.
   final String? groupBy;
 
-  /// Declares which row groups to include in the cursor,
-  /// if row grouping is being used. Passing null will cause
-  /// all row groups to be included, and is required when row
-  /// grouping is not being used.
+  /// The HAVING clause to filter groups.
   final String? having;
 
-  // Declares how to order the rows,
-  /// Passing null will use the default sort order,
-  /// which may be unordered.
+  /// The ORDER BY clause to sort rows.
   final String? orderBy;
 
-  /// Limits the number of rows returned by the query
+  /// The maximum number of rows to return.
   final int? limit;
 
-  /// Specifies the starting index.
+  /// The offset of the first row to return.
   final int? offset;
 
   ReadParameters.read({

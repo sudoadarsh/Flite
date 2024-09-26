@@ -9,19 +9,13 @@ part 'helper.dart';
 
 class SchemaBuilder extends GeneratorForAnnotation<Schema> {
   /// The dart class.
-  String? dartClass;
+  String? _dartClass;
 
   /// The table name.
-  String? table;
-
-  /// Whether fromJson method is available or not.
-  bool fromJson = false;
-
-  /// Whether toJson method is available or not.
-  bool toJson = false;
+  String? _table;
 
   /// The tabs.
-  String tabs = "\t\t";
+  static const String _tabs = "\t\t";
 
   @override
   String generateForAnnotatedElement(
@@ -30,76 +24,56 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
     BuildStep buildStep,
   ) {
     _Assertions.check(element);
-    fromJson = _Assertions.fromJsonConstructorCheck(element as ClassElement);
-    toJson = _Assertions.toJsonMethodCheck(element);
+    element as ClassElement;
 
-    dartClass = element.name.toString();
+    _dartClass = element.name.toString();
     // Set the table name.
     final ConstantReader reader = annotation.read("name");
-    table = reader.isString ? reader.stringValue : dartClass;
+    _table = reader.isString ? reader.stringValue : _dartClass;
 
     // The string buffer.
     final StringBuffer buffer = StringBuffer();
 
-    // Create the enum.
-    buffer.write(_createEnum(element));
-
-    // Provider Start.
-    buffer.write("class ${table?.sentence}Provider extends FliteProvider {");
-    buffer.writeln("FliteDatabase? _database;\n");
-    buffer.write(_createDatabaseGetter);
-    buffer.writeln("$_createTableGetter\n");
+    // Extension Start.
+    buffer.write("extension ${_dartClass}FliteExtension on $_dartClass {");
     buffer.write(_createSchema(element));
-    buffer.write(_createInit);
-    buffer.write(_createRead);
-    buffer.write(_createInsert);
-    buffer.write(_createUpdate);
-    buffer.write(_createDelete);
-    buffer.write(_createTransaction);
-    // Provider End.
+    buffer.write(_createDeserialize(element));
+    buffer.write(_createSerialize(element));
+    // Extension End.
     buffer.write("}");
     return buffer.toString();
   }
 
-  String _createEnum(final ClassElement element) {
+  /// Create the Deserialize method.
+  String _createDeserialize(final ClassElement element) {
     final StringBuffer buffer = StringBuffer();
-    buffer.write("enum ${table?.sentence}Keys {");
-    final List<FieldElement> fields = element.fields;
-    for (int index = 0; index < fields.length; index++) {
-      buffer.write(
-        "${fields[index].name}${index != (fields.length - 1) ? "," : ""}",
-      );
-    }
-    buffer.write("}");
-    return buffer.toString();
-  }
-
-  String get _createDatabaseGetter {
-    final StringBuffer buffer = StringBuffer();
-    buffer.writeln("@override");
-    buffer.write("FliteDatabase get database {");
     buffer.write(
-      "assert(_database != null, 'Initialize the ${table?.sentence}Provider.');",
+      "static $_dartClass deserialize(final Map<String, dynamic> json) {",
     );
-    buffer.write("return _database!; }");
+    buffer.write("return $_dartClass(");
+    for (final FieldElement field in element.fields) {
+      buffer.write("${field.name} : json['${field.name}']");
+      buffer.write(",");
+    }
+    buffer.write(");}");
     return buffer.toString();
   }
 
+  /// Create the SQLite schema.
   String _createSchema(final ClassElement element) {
     // The primary key checker.
-    const TypeChecker primaryKeyChecker = TypeChecker.fromRuntime(PrimaryKey);
+    const TypeChecker primaryKeyChecker = TypeChecker.fromRuntime(Primary);
     // The ignore key checker.
-    const TypeChecker ignoreKey = TypeChecker.fromRuntime(IgnoreKey);
+    const TypeChecker ignoreKey = TypeChecker.fromRuntime(Ignore);
     // The foreign key checker.
-    const TypeChecker foreignKeyChecker = TypeChecker.fromRuntime(ForeignKey);
+    const TypeChecker foreignKeyChecker = TypeChecker.fromRuntime(Foreign);
 
     // The string buffer.
     final StringBuffer buffer = StringBuffer();
-    buffer.writeln("@override");
-    buffer.write("String get schema {");
-    buffer.write("return '''CREATE TABLE IF NOT EXISTS $table(");
+    buffer.write("static String get schema {");
+    buffer.write("return '''CREATE TABLE IF NOT EXISTS $_table(");
 
-    final Map<String, ForeignKey> foreignKeys = <String, ForeignKey>{};
+    final Map<String, Foreign> foreignKeys = <String, Foreign>{};
 
     final List<FieldElement> fields = element.fields;
     for (int index = 0; index < fields.length; index++) {
@@ -107,7 +81,7 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
       // Don't consider the field if annotated with IgnoreKey.
       if (ignoreKey.hasAnnotationOfExact(field)) continue;
 
-      buffer.write("\n$tabs${field.name} ");
+      buffer.write("\n$_tabs${field.name} ");
       // The sqlite type.
       final String sqliteType = _sqliteType(field.type);
       buffer.write(sqliteType);
@@ -132,11 +106,11 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
         final String? column = obj?.getField("column")?.toStringValue();
         final DartObject? onDelete = obj?.getField("onDelete");
         final DartObject? onUpdate = obj?.getField("onUpdate");
-        foreignKeys[field.name] = ForeignKey(
+        foreignKeys[field.name] = Foreign(
           table!,
           column,
-          CascadeOperation.values.elementAt(_enumIndex(onDelete)),
-          CascadeOperation.values.elementAt(_enumIndex(onUpdate)),
+          Operation.values.elementAt(_enumIndex(onDelete)),
+          Operation.values.elementAt(_enumIndex(onUpdate)),
         );
       }
       if (isRequired) buffer.write(" NOT NULL");
@@ -147,9 +121,9 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
       buffer.writeln(",");
       for (int index = 0; index < foreignKeys.length; index++) {
         if (index != 0) buffer.write(",\n");
-        final MapEntry<String, ForeignKey> entry;
+        final MapEntry<String, Foreign> entry;
         entry = foreignKeys.entries.elementAt(index);
-        buffer.write("${tabs}FOREIGN KEY (${entry.key})");
+        buffer.write("${_tabs}FOREIGN KEY (${entry.key})");
         buffer.write(" REFERENCES ${entry.value.table}(${entry.value.column})");
         buffer.write(
           " ON DELETE ${entry.value.onDelete.value} ON UPDATE ${entry.value.onUpdate.value}",
@@ -157,133 +131,20 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
       }
     }
 
-    buffer.write("\n$tabs''';}");
+    buffer.write("\n$_tabs''';}");
     return buffer.toString();
   }
 
-  String get _createInit {
+  /// Create the Serialize method.
+  String _createSerialize(final ClassElement element) {
     final StringBuffer buffer = StringBuffer();
-    buffer.write("Future<void> init(final FliteDatabase database) async {");
-    buffer.write("await flInit(database);");
-    buffer.write("_database = database;");
-    buffer.write("return; }");
-    return buffer.toString();
-  }
-
-  String get _createTableGetter {
-    final StringBuffer buffer = StringBuffer();
-    buffer.writeln("@override");
-    buffer.write("String get table => '$table';");
-    return buffer.toString();
-  }
-
-  String get _createRead {
-    final StringBuffer buffer = StringBuffer();
-    if (fromJson) {
-      buffer.write(
-        "Future<List<$dartClass>> read({required ReadParameters parameters}) async {",
-      );
-      buffer.write(
-        "final List<Map<String, dynamic>> data = await flRead(parameters: parameters,);",
-      );
-      buffer.write(
-        "return data.map((final Map<String, dynamic> json) => $dartClass.fromJson(json)).toList();",
-      );
-    } else {
-      buffer.write(
-        "Future<List<Map<String, dynamic>>> read({required ReadParameters parameters,}) async {",
-      );
-      buffer.write("return flRead(parameters: parameters);");
+    buffer.write("Map<String, dynamic> serialize() {");
+    final Map<String, String> fields = <String, String>{};
+    for (final FieldElement field in element.fields) {
+      fields["'${field.name}'"] = field.name;
     }
-
+    buffer.write("return $fields;");
     buffer.write("}");
-    return buffer.toString();
-  }
-
-  String get _createInsert {
-    final StringBuffer buffer = StringBuffer();
-    if (toJson) {
-      buffer.write(
-        "Future<int> insert({required $dartClass data, ConflictAlgorithm? conflictAlgorithm, String? nullColumnHack,}) async {",
-      );
-    } else {
-      buffer.write(
-        "Future<int> insert({required Map<String, dynamic> json, ConflictAlgorithm? conflictAlgorithm, String? nullColumnHack,}) async {",
-      );
-    }
-    buffer.write(
-      "return flInsert(json: ${toJson ? 'data.toJson()' : 'json'}, conflictAlgorithm: conflictAlgorithm, nullColumnHack: nullColumnHack,);",
-    );
-    buffer.write("}");
-    return buffer.toString();
-  }
-
-  String get _createUpdate {
-    final StringBuffer buffer = StringBuffer();
-    if (toJson) {
-      buffer.write(
-        "Future<int> update({required $dartClass data, String? where, List<Object?>? whereArgs, ConflictAlgorithm? conflictAlgorithm,}) async {",
-      );
-    } else {
-      buffer.write(
-        "Future<int> update({required Map<String, dynamic> json, String? where, List<Object?>? whereArgs, ConflictAlgorithm? conflictAlgorithm,}) async {",
-      );
-    }
-    buffer.write(
-      "return flUpdate(json: ${toJson ? 'data.toJson()' : 'json'}, where: where, whereArgs: whereArgs, conflictAlgorithm: conflictAlgorithm,);",
-    );
-    buffer.write("}");
-    return buffer.toString();
-  }
-
-  String get _createDelete {
-    final StringBuffer buffer = StringBuffer();
-    buffer.write(
-      "Future<int> delete({String? where, List<Object?>? whereArgs}) async {",
-    );
-    buffer.write("return flDelete(where: where, whereArgs: whereArgs);");
-    buffer.write("}");
-    return buffer.toString();
-  }
-
-  String get _createTransaction {
-    final StringBuffer buffer = StringBuffer();
-    // The generic type.
-    final String? genericType = toJson ? dartClass : "Map<String, dynamic>";
-    buffer.write(
-      "Future<void> transaction({required List<TransactionParameters<$genericType>> parameters,}) async {",
-    );
-    buffer.write("return await database.transaction((txn) async {");
-    buffer.write(
-      "for (final TransactionParameters<$genericType> parameter in parameters) {",
-    );
-    buffer.write('''
-      switch (parameter.type) {
-          case TransactionType.insert:
-            await txn.insert(
-              table,
-              ${toJson ? "parameter.data?.toJson()" : "parameter.data"}  ?? const {},
-              conflictAlgorithm: parameter.conflictAlgorithm,
-              nullColumnHack: parameter.nullColumnHack,
-            );
-          case TransactionType.update:
-            await txn.update(
-              table,
-              ${toJson ? "parameter.data?.toJson()" : "parameter.data"}  ?? const {},
-              conflictAlgorithm: parameter.conflictAlgorithm,
-              where: parameter.where,
-              whereArgs: parameter.whereArgs,
-            );
-          case TransactionType.delete:
-            await txn.delete(
-              table,
-              where: parameter.where,
-              whereArgs: parameter.whereArgs,
-            );
-        }
-    ''');
-    buffer.write("}");
-    buffer.write("});}");
     return buffer.toString();
   }
 
