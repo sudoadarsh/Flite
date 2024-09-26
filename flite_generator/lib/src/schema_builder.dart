@@ -36,31 +36,27 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
 
     // Extension Start.
     buffer.write("extension ${_dartClass}FliteExtension on $_dartClass {");
-    buffer.write(_createSchema(element));
-    buffer.write(_createDeserialize(element));
-    buffer.write(_createSerialize(element));
+    buffer.writeln("$_tableGetter\n");
+    buffer.write(_schema(element));
+    buffer.write(_init);
+    buffer.write(_deserializeAndSerialize(element));
+    buffer.write(_insertOperation);
+    buffer.write(_updateOperation);
     // Extension End.
     buffer.write("}");
     return buffer.toString();
   }
 
-  /// Create the Deserialize method.
-  String _createDeserialize(final ClassElement element) {
+  /// Create the table name getter.
+  String get _tableGetter {
     final StringBuffer buffer = StringBuffer();
-    buffer.write(
-      "static $_dartClass deserialize(final Map<String, dynamic> json) {",
-    );
-    buffer.write("return $_dartClass(");
-    for (final FieldElement field in element.fields) {
-      buffer.write("${field.name} : json['${field.name}']");
-      buffer.write(",");
-    }
-    buffer.write(");}");
+    buffer.writeln("/// The name of the table.");
+    buffer.write("String get table => '$_table';");
     return buffer.toString();
   }
 
   /// Create the SQLite schema.
-  String _createSchema(final ClassElement element) {
+  String _schema(final ClassElement element) {
     // The primary key checker.
     const TypeChecker primaryKeyChecker = TypeChecker.fromRuntime(Primary);
     // The ignore key checker.
@@ -70,6 +66,7 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
 
     // The string buffer.
     final StringBuffer buffer = StringBuffer();
+    buffer.writeln("/// The SQLite schema for creating the `$_table` table.");
     buffer.write("static String get schema {");
     buffer.write("return '''CREATE TABLE IF NOT EXISTS $_table(");
 
@@ -135,16 +132,60 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
     return buffer.toString();
   }
 
-  /// Create the Serialize method.
-  String _createSerialize(final ClassElement element) {
+  /// Create the init method.
+  String get _init {
     final StringBuffer buffer = StringBuffer();
-    buffer.write("Map<String, dynamic> serialize() {");
+    buffer.writeln("/// Create the `$_table` table.");
+    buffer.write(
+      "static Future<void> init(final Database database) async {",
+    );
+    buffer.write("return FliteProvider.create_(database, schema); }");
+    return buffer.toString();
+  }
+
+  /// Create the Deserialize and serialize methods.
+  String _deserializeAndSerialize(final ClassElement element) {
+    final StringBuffer deserialize = StringBuffer();
+    deserialize.writeln("/// Deserializes a Json into a `$_dartClass`.");
+    final StringBuffer serialize = StringBuffer();
+    serialize.writeln("/// Serializes the `$_dartClass` into Json.");
+
+    deserialize.write(
+      "static $_dartClass deserialize(final Map<String, dynamic> json) {",
+    );
+    deserialize.write("return $_dartClass(");
     final Map<String, String> fields = <String, String>{};
     for (final FieldElement field in element.fields) {
       fields["'${field.name}'"] = field.name;
+      deserialize.write("${field.name} : json['${field.name}']");
+      deserialize.write(",");
     }
-    buffer.write("return $fields;");
-    buffer.write("}");
+    deserialize.write(");}");
+    serialize.write("Map<String, dynamic> serialize() {");
+    serialize.write("return $fields;");
+    serialize.write("}");
+    return deserialize.toString() + serialize.toString();
+  }
+
+  /// Create the insert operation.
+  String get _insertOperation {
+    final StringBuffer buffer = StringBuffer();
+    buffer.writeln(
+      "/// Inserts into the table and returns the id of the last created row.",
+    );
+    buffer.write("Future<int> insert(final InsertParameters params) async {");
+    buffer.write("return insert_(table, serialize(), params); }");
+    return buffer.toString();
+  }
+
+  /// Create the update operation.
+  String get _updateOperation {
+    final StringBuffer buffer = StringBuffer();
+    buffer.writeln(
+      "/// Update the rows of the table and returns the number of changes made.",
+    );
+    buffer.write("Future<int> update(final UpdateParameters params) async {");
+    buffer.write("return update_(table, serialize(), params); }");
     return buffer.toString();
   }
 

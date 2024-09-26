@@ -2,7 +2,7 @@ import 'package:flite/flite.dart';
 part 'vehicle_model.g.dart';
 
 @Schema()
-class VehicleModel {
+class VehicleModel with FliteProvider {
   @primary
   final int id;
   final String name;
