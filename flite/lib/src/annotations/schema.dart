@@ -6,7 +6,7 @@
 /// Example usage:
 /// ```dart
 /// @Schema(name: 'users')
-/// class User {
+/// class User with FliteProvider {
 ///   @primary
 ///   final int id;
 ///

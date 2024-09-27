@@ -1,3 +1,7 @@
 ## 0.0.1
 
-* TODO: Describe initial release.
+* Bare bones package.
+
+## 1.0.0
+
+* Initial release.

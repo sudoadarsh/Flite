@@ -2,7 +2,15 @@ import 'package:flite/src/parameters/insert_parameters.dart';
 import 'package:flite/src/parameters/update_parameters.dart';
 import 'package:sqflite/sqlite_api.dart' show Database;
 
-/// Mix your Schema Dart class with this.
+/// A mixin providing core SQLite functionality for a schema class.
+///
+/// To use this, mix it into a class that represents a SQLite table schema.
+/// Example:
+/// ```dart
+/// class User with FliteProvider {
+///   //..
+/// }
+/// ```
 mixin FliteProvider on Object {
   /// The database.
   static Database? _db;

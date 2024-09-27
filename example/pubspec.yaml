@@ -14,8 +14,7 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  flite:
-    path: ../flite/
+  flite: 1.0.0
 
 dev_dependencies:
   flutter_test:

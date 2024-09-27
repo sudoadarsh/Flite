@@ -155,7 +155,9 @@ class SchemaBuilder extends GeneratorForAnnotation<Schema> {
     );
     deserialize.write("return $_dartClass(");
     final Map<String, String> fields = <String, String>{};
+    const TypeChecker ignore = TypeChecker.fromRuntime(Ignore);
     for (final FieldElement field in element.fields) {
+      if (ignore.hasAnnotationOfExact(field)) continue;
       fields["'${field.name}'"] = field.name;
       deserialize.write("${field.name} : json['${field.name}']");
       deserialize.write(",");
